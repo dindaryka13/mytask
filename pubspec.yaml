@@ -1,0 +1,34 @@
+name: mytask
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.6.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  get: ^4.7.2
+  get_storage: ^2.1.1 
+  intl: ^0.18.1 
+  fl_chart: ^0.64.0 # atau versi terbaru
+  image_picker: ^1.0.4 # atau versi stabil terbaru
+  supabase_flutter: ^2.3.0
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/maskot-biru.png"
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
