@@ -33,12 +33,15 @@ class ProfileController extends GetxController {
   }
 
   // ============================================================
-  // 🔹 LOAD USER DATA from Supabase
+  // 📹 LOAD USER DATA from Supabase
   // ============================================================
   Future<void> loadUserData() async {
     try {
       final authUser = supabase.auth.currentUser;
-      if (authUser == null) return;
+      if (authUser == null) {
+        Get.offAllNamed('/login');
+        return;
+      }
 
       final response = await supabase
           .from('users')
@@ -54,12 +57,18 @@ class ProfileController extends GetxController {
 
     } catch (e) {
       print('Error loadUserData: $e');
-      Get.snackbar('Error', 'Failed to load profile');
+      Get.snackbar(
+        'Error',
+        'Failed to load profile',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 
   // ============================================================
-  // 🔹 UPDATE USER PROFILE
+  // 📹 UPDATE USER PROFILE
   // ============================================================
   Future<void> updateProfile() async {
     if (currentUser.value == null) return;
@@ -103,7 +112,8 @@ class ProfileController extends GetxController {
           backgroundColor: Colors.green,
           colorText: Colors.white);
     } catch (e) {
-      Get.snackbar('Error', 'Failed to update profile',
+      print('Error updateProfile: $e');
+      Get.snackbar('Error', 'Failed to update profile: ${e.toString()}',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.red,
           colorText: Colors.white);
@@ -113,44 +123,54 @@ class ProfileController extends GetxController {
   }
 
   // ============================================================
-  // 🔹 UPDATE PROFILE IMAGE (Avatar)
+  // 📹 UPDATE PROFILE IMAGE (Avatar)
   // ============================================================
   Future<void> updateProfileImage(String imageUrl) async {
     try {
       final userId = currentUser.value!.id;
 
-      await supabase.from('users').update({'avatar_url': imageUrl}).eq('id', userId);
+      await supabase.from('users').update({
+        'avatar_url': imageUrl.isEmpty ? null : imageUrl
+      }).eq('id', userId);
 
-      currentUser.value = currentUser.value!.copyWith(profileImage: imageUrl);
+      currentUser.value = currentUser.value!.copyWith(
+        profileImage: imageUrl.isEmpty ? null : imageUrl
+      );
 
       Get.snackbar(
         'Success',
-        'Profile picture updated',
+        imageUrl.isEmpty ? 'Profile picture removed' : 'Profile picture updated',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.green,
         colorText: Colors.white,
       );
     } catch (e) {
       print('Error updating image: $e');
-      Get.snackbar('Error', 'Failed to update image');
+      Get.snackbar(
+        'Error',
+        'Failed to update image: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
 
   // ============================================================
-  // 🔹 LOAD STATISTICS from Supabase
+  // 📹 LOAD STATISTICS from Supabase
   // ============================================================
   Future<void> loadStatistics() async {
     try {
       final authUser = supabase.auth.currentUser;
       if (authUser == null) return;
 
-      // total tasks
+      // Total tasks
       final total = await supabase
           .from('tasks')
           .select()
           .eq('user_id', authUser.id);
 
-      // completed tasks
+      // Completed tasks
       final completed = await supabase
           .from('tasks')
           .select()
@@ -168,7 +188,7 @@ class ProfileController extends GetxController {
   }
 
   // ============================================================
-  // 🔹 GET COMPLETION PERCENTAGE
+  // 📹 GET COMPLETION PERCENTAGE
   // ============================================================
   double getCompletionPercentage() {
     if (totalTasks.value == 0) return 0;
@@ -176,12 +196,13 @@ class ProfileController extends GetxController {
   }
 
   // ============================================================
-  // 🔹 TOGGLE EDIT MODE
+  // 📹 TOGGLE EDIT MODE
   // ============================================================
   void toggleEditMode() {
     isEditing.value = !isEditing.value;
 
     if (!isEditing.value) {
+      // Reset ke data awal jika cancel
       usernameController.text = currentUser.value!.username;
       emailController.text = currentUser.value!.email;
       socialMediaController.text = currentUser.value!.socialMedia ?? '';
@@ -189,7 +210,7 @@ class ProfileController extends GetxController {
   }
 
   // ============================================================
-  // 🔹 LOGOUT
+  // 📹 LOGOUT
   // ============================================================
   void logout() {
     Get.dialog(
@@ -197,7 +218,10 @@ class ProfileController extends GetxController {
         title: const Text('Logout'),
         content: const Text('Are you sure you want to logout?'),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () async {
               await supabase.auth.signOut();

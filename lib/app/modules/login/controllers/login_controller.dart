@@ -56,100 +56,115 @@ class LoginController extends GetxController {
     return null;
   }
 
-  // MAIN LOGIN FUNCTION
+  // MAIN LOGIN FUNCTION (SIMPLE)
   Future<void> login() async {
     if (!formKey.currentState!.validate()) return;
 
     isLoading.value = true;
     try {
+      final email = emailController.text.trim();
+      final password = passwordController.text;
+      
+      print(' Attempting login for: $email');
+
+      // Sign in dengan Supabase Auth
       final response = await _supabase.auth.signInWithPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text,
+        email: email,
+        password: password,
       );
 
       final user = response.user;
+      print(' Auth successful. User ID: ${user?.id}');
 
       if (user != null) {
-        // === NEW PART: AUTO GENERATE PROFILE IF NOT EXIST ===
-        final userId = user.id;
-
-        // Check if profile exists
-        final profile = await _supabase
-            .from('profiles')
-            .select()
-            .eq('id', userId)
-            .maybeSingle();
-
-        // If profile not exist, create one
-        if (profile == null) {
-          await _supabase.from('profiles').insert({
-            'id': userId,
-            'username': user.email?.split('@').first ?? 'User',
-            'email': user.email,
-            'sosmed': '',
-            'photo_url': null,
-          });
-        }
-
-        // Navigate to home
+        // Langsung masuk ke home
         Get.offAllNamed('/home');
-
-        Get.snackbar(
-          'Success',
-          'Login successful!',
-          snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          margin: const EdgeInsets.all(16),
-        );
       }
     } on AuthException catch (e) {
+      print(' Auth error: ${e.message}');
+      
+      String errorMessage = 'Email atau password salah';
+      
+      // Reset password field
+      passwordController.clear();
+      
       Get.snackbar(
-        'Error',
-        e.message,
+        'Gagal Masuk',
+        errorMessage,
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
         margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
       );
     } catch (e) {
+      print('❌ Unexpected error: $e');
       Get.snackbar(
         'Error',
-        'An unexpected error occurred',
+        'Terjadi kesalahan. Silakan coba lagi nanti.',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Colors.red,
         colorText: Colors.white,
         margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
       );
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Google Login (dummy)
+  // Google Login
   Future<void> loginWithGoogle() async {
     try {
       isLoading.value = true;
 
-      // TODO: Implement Google Sign In
-      await Future.delayed(const Duration(seconds: 2));
-
-      Get.offAllNamed('/home');
-
-      Get.snackbar(
-        'Success',
-        'Logged in with Google!',
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        margin: const EdgeInsets.all(16),
+      await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'io.supabase.mytask://login-callback',
       );
+
+      // Wait for callback
+      await Future.delayed(const Duration(seconds: 2));
+      
+      final user = _supabase.auth.currentUser;
+      
+      if (user != null) {
+        // Check/create profile
+        final profile = await _supabase
+            .from('users')
+            .select()
+            .eq('id', user.id)
+            .maybeSingle();
+
+        if (profile == null) {
+          await _supabase.from('users').insert({
+            'id': user.id,
+            'username': user.email?.split('@').first ?? 'User',
+            'email': user.email,
+            'avatar_url': user.userMetadata?['avatar_url'],
+            'bio': null,
+            'sosmed': null,
+          });
+        }
+
+        Get.offAllNamed('/home');
+
+        Get.snackbar(
+          'Success',
+          'Logged in with Google!',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          margin: const EdgeInsets.all(16),
+        );
+      }
     } catch (e) {
+      print('Google login error: $e');
       Get.snackbar(
         'Error',
-        'Google sign in failed: ${e.toString()}',
+        'Google sign in is not available yet',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: Colors.red,
+        backgroundColor: Colors.orange,
         colorText: Colors.white,
         margin: const EdgeInsets.all(16),
       );
