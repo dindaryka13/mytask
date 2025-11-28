@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import '../controllers/profile_controller.dart';
 
 class ProfileView extends GetView<ProfileController> {
@@ -58,7 +61,14 @@ class ProfileView extends GetView<ProfileController> {
       child: Row(
         children: [
           IconButton(
-            onPressed: () => Get.back(),
+            onPressed: () {
+              // Use pop until we find the home route or go to home if not found
+              if (Get.previousRoute.isNotEmpty) {
+                Get.back();
+              } else {
+                Get.offAllNamed('/home');
+              }
+            },
             icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
           ),
           const Expanded(
@@ -511,50 +521,118 @@ class ProfileView extends GetView<ProfileController> {
     );
   }
 
+  // Pick image from gallery
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final pickedFile = await ImagePicker().pickImage(
+        source: source,
+        imageQuality: 80,
+        maxWidth: 800,
+      );
+
+      if (pickedFile != null) {
+        // Show loading indicator
+        Get.dialog(
+          const Center(child: CircularProgressIndicator()),
+          barrierDismissible: false,
+        );
+
+        // Upload and update profile image
+        await controller.uploadAndUpdateProfileImage(pickedFile.path);
+        
+        // Close loading dialog
+        if (Get.isDialogOpen!) Get.back();
+      }
+    } catch (e) {
+      if (Get.isDialogOpen!) Get.back();
+      Get.snackbar(
+        'Error',
+        'Failed to pick image: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    }
+  }
+
   void _showImagePickerDialog() {
     Get.dialog(
       AlertDialog(
-        title: const Text('Update Profile Picture'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Update Profile Picture',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 16),
             ListTile(
-              leading: const Icon(Icons.photo_library),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.photo_library, color: Colors.blue),
+              ),
               title: const Text('Choose from Gallery'),
               onTap: () {
                 Get.back();
-                // Implement image picker
-                Get.snackbar(
-                  'Gallery',
-                  'Image picker implementation needed',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                _pickImage(ImageSource.gallery);
               },
             ),
+            const SizedBox(height: 8),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.camera_alt, color: Colors.green),
+              ),
               title: const Text('Take a Photo'),
               onTap: () {
                 Get.back();
-                // Implement camera
-                Get.snackbar(
-                  'Camera',
-                  'Camera implementation needed',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+                _pickImage(ImageSource.camera);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Remove Photo',
-                  style: TextStyle(color: Colors.red)),
-              onTap: () {
-                Get.back();
-                controller.updateProfileImage('');
-              },
-            ),
+            if (controller.currentUser.value?.profileImage != null) ...[
+              const SizedBox(height: 8),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.delete, color: Colors.red),
+                ),
+                title: const Text(
+                  'Remove Photo',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () {
+                  Get.back();
+                  controller.uploadAndUpdateProfileImage('');
+                },
+              ),
+            ],
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
   }

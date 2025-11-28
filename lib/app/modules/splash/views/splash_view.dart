@@ -14,7 +14,7 @@ class SplashView extends GetView<SplashController> {
         children: [
           // Background putih
           Container(color: Colors.white),
-
+          
           // Animasi blob biru
           Center(
             child: AnimatedBuilder(
@@ -23,28 +23,26 @@ class SplashView extends GetView<SplashController> {
                 return Transform.scale(
                   scale: controller.scaleAnimation.value,
                   child: CustomPaint(
-                    size: const Size(200, 200),
+                    size: Size(MediaQuery.of(context).size.width * 0.8,
+                        MediaQuery.of(context).size.width * 0.8),
                     painter: BlobPainter(),
                   ),
                 );
               },
             ),
           ),
-
-          // Logo maskot di tengah
+          
+          // Logo di tengah
           Center(
-            child: _buildLogo(),
+            child: Image.asset(
+              'assets/logo-putih-maskot.png',
+              width: 120,
+              height: 120,
+              fit: BoxFit.contain,
+            ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildLogo() {
-    return Image.asset(
-      'assets/logo-putih-maskot.png',
-      width: 180,
-      fit: BoxFit.contain,
     );
   }
 }

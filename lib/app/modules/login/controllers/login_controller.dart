@@ -83,7 +83,18 @@ class LoginController extends GetxController {
     } on AuthException catch (e) {
       print(' Auth error: ${e.message}');
       
-      String errorMessage = 'Email atau password salah';
+      String errorMessage;
+      
+      // More specific error messages
+      if (e.message.toLowerCase().contains('invalid login credentials')) {
+        errorMessage = 'Email atau password salah. Silakan coba lagi.';
+      } else if (e.message.toLowerCase().contains('email not confirmed')) {
+        errorMessage = 'Email belum diverifikasi. Silakan periksa email Anda untuk verifikasi.';
+      } else if (e.message.toLowerCase().contains('network')) {
+        errorMessage = 'Gagal terhubung ke server. Periksa koneksi internet Anda.';
+      } else {
+        errorMessage = 'Terjadi kesalahan: ${e.message}';
+      }
       
       // Reset password field
       passwordController.clear();
@@ -95,10 +106,10 @@ class LoginController extends GetxController {
         backgroundColor: Colors.red,
         colorText: Colors.white,
         margin: const EdgeInsets.all(16),
-        duration: const Duration(seconds: 4),
+        duration: const Duration(seconds: 5),
       );
     } catch (e) {
-      print('❌ Unexpected error: $e');
+      print(' Unexpected error: $e');
       Get.snackbar(
         'Error',
         'Terjadi kesalahan. Silakan coba lagi nanti.',
